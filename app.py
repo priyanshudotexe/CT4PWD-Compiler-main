@@ -4,18 +4,17 @@ from parse import parse_blocks
 from eval import generate_output
 import cv2
 import os
+import numpy as np
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
 @app.route('/compile', methods=['POST'])
 def compile_image():
     """
-    Compile endpoint that processes an image and returns compilation results.
+    Compile endpoint that processes an uploaded image and returns compilation results.
     
-    Expected JSON payload:
-    {
-        "image_path": "path/to/image.png"
-    }
+    Expects multipart form data with 'image' file field.
     
     Returns JSON response:
     {
@@ -25,34 +24,35 @@ def compile_image():
     }
     """
     try:
-        # Get JSON data from request
-        data = request.get_json()
-        
-        if not data or 'image_path' not in data:
+        # Check if image file is provided
+        if 'image' not in request.files:
             return jsonify({
                 "success": False,
                 "is_correct": False,
-                "output": "Missing image_path in request body"
+                "output": "No image file provided. Please upload an image using 'image' field"
             }), 400
         
-        image_path = data['image_path']
+        file = request.files['image']
         
-        # Check if file exists
-        if not os.path.exists(image_path):
+        if file.filename == '':
             return jsonify({
                 "success": False,
                 "is_correct": False,
-                "output": f"Image file not found: {image_path}"
-            }), 404
+                "output": "No image file selected"
+            }), 400
         
-        # Load and process the image
-        img = cv2.imread(image_path)
+        # Read image data directly from memory
+        file_bytes = file.read()
+        
+        # Convert to numpy array and then to OpenCV image
+        nparr = np.frombuffer(file_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
         if img is None:
             return jsonify({
                 "success": False,
                 "is_correct": False,
-                "output": f"Could not read image file: {image_path}"
+                "output": "Could not read the uploaded image. Please ensure it's a valid image file"
             }), 400
         
         # 1) Detect all QRs (loop, if/else, conditions, actions, colors)
@@ -108,13 +108,10 @@ def home():
             "compile": {
                 "method": "POST",
                 "endpoint": "/compile",
-                "content_type": "application/json",
-                "body": {
-                    "image_path": "string - path to the image file"
-                },
-                "example": {
-                    "image_path": "test-images/ifelse.png"
-                }
+                "content_type": "multipart/form-data",
+                "field": "image",
+                "description": "Upload image file containing visual programming blocks",
+                "example": "curl -X POST -F 'image=@path/to/image.png' https://your-api-url/compile"
             }
         }
     })
