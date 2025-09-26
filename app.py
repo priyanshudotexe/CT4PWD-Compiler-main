@@ -21,13 +21,7 @@ def compile_image():
     {
         "success": true/false,
         "is_correct": true/false,
-        "output": "compiled output or error message",
-        "details": {
-            "detected_blocks": [...],
-            "loop_count": int,
-            "anchor_x": int,
-            "parsed": {...}
-        }
+        "output": "compiled output or error message"
     }
     """
     try:
@@ -38,8 +32,7 @@ def compile_image():
             return jsonify({
                 "success": False,
                 "is_correct": False,
-                "output": "Missing image_path in request body",
-                "details": None
+                "output": "Missing image_path in request body"
             }), 400
         
         image_path = data['image_path']
@@ -49,8 +42,7 @@ def compile_image():
             return jsonify({
                 "success": False,
                 "is_correct": False,
-                "output": f"Image file not found: {image_path}",
-                "details": None
+                "output": f"Image file not found: {image_path}"
             }), 404
         
         # Load and process the image
@@ -60,8 +52,7 @@ def compile_image():
             return jsonify({
                 "success": False,
                 "is_correct": False,
-                "output": f"Could not read image file: {image_path}",
-                "details": None
+                "output": f"Could not read image file: {image_path}"
             }), 400
         
         # 1) Detect all QRs (loop, if/else, conditions, actions, colors)
@@ -84,22 +75,14 @@ def compile_image():
         return jsonify({
             "success": True,
             "is_correct": is_correct,
-            "output": clean_output,
-            "details": {
-                "detected_blocks": blocks,
-                "loop_count": loop_count,
-                "anchor_x": anchor_x,
-                "parsed": parsed,
-                "raw_output": final_output
-            }
+            "output": clean_output
         })
         
     except Exception as e:
         return jsonify({
             "success": False,
             "is_correct": False,
-            "output": f"Error processing image: {str(e)}",
-            "details": None
+            "output": f"Error processing image: {str(e)}"
         }), 500
 
 @app.route('/health', methods=['GET'])
